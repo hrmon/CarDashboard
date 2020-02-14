@@ -5,6 +5,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import pandas as pd
 import plotly.graph_objs as go
+import plotly.express as px
 from dash.dependencies import Input, Output
 
 from load_data import get_dataframe
@@ -15,6 +16,10 @@ df = get_dataframe()
 df.drop(df[df.price > 10000000].index, inplace=True)
 tdf = df[['state', 'price']].groupby('state').mean()
 
+def model_brand_df():
+    dd = df.groupby(['model', 'manufacturer'], as_index=False).count().sort_values('Unnamed: 0')
+    dd.rename(columns={'Unnamed: 0': 'count'}, inplace=True)
+    return dd[dd['count'] > 2000]
 
 def count_by_manufacturer():
     dic = df.groupby('manufacturer').count()['Unnamed: 0'].to_dict()
@@ -161,6 +166,21 @@ app.layout = html.Div(children=[
                 children=dcc.Loading(children=dcc.Graph(id="submission_time_hm")),
             ),
         ],
+    ),
+    html.Div(
+        id="bottom-row",
+        className="row",
+        children=html.Div(
+            id="models_by_brand_sunburst",
+            className="8 columns",
+            children=[
+                dcc.Loading(children=dcc.Graph(id="model_by_brand", figure=px.sunburst(
+                    model_brand_df(),
+                    path=['manufacturer', 'model'],
+                    values='count',
+                ))),
+            ]
+        )
     ),
 ])
 
